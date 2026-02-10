@@ -24,6 +24,7 @@ A full-stack kanban-style task management application with real-time collaborati
 - React Beautiful DnD
 - Axios
 - React Router
+- Recoil
 
 **Backend:**
 - Node.js
