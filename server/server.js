@@ -12,60 +12,64 @@ import socketHandlers from './socket/socketHandlers.js';
 const app = express();
 const httpServer = createServer(app);
 
+// Dynamic CORS: allow localhost for dev + your deployed frontend URL
 const allowedOrigins = [
-    "http://localhost:5173",
-    "http://localhost:3000", 
-];
+  "http://localhost:5173",
+  "http://localhost:3000",
+  process.env.CLIENT_URL,  // Set this on Render to your Vercel URL
+].filter(Boolean);
 
-
-const io = new Server(httpServer,{
-    cors: {
-        origin: allowedOrigins,
-        methods: ["GET","POST", "PUT", "DELETE"],
-        credentials: true
-    },
+const io = new Server(httpServer, {
+  cors: {
+    origin: allowedOrigins,
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    credentials: true
+  },
 });
 
 // Middleware
 app.use(cors({
-    origin: allowedOrigins,
-    credentials: true
+  origin: allowedOrigins,
+  credentials: true
 }));
 app.use(express.json());
 
-// MongoDB Connection Section
+// Health check endpoint (keeps Render from sleeping + useful for monitoring)
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'ok' });
+});
 
-if(!MONGO_URI){
-    console.error("Error: MONGO_URI is not defined in the .env file.");
-    process.exit(1); // Exit the process if the URI is missing
+// MongoDB Connection
+if (!MONGO_URI) {
+  console.error("Error: MONGO_URI is not defined in the .env file.");
+  process.exit(1);
 }
 
-// Connect to MongoDB
 mongoose.connect(MONGO_URI);
 
-//Error Handling for MongoDB Connection
 mongoose.connection.on('disconnected', () => {
-    console.log('Mongoose default connection disconnected');
+  console.log('Mongoose default connection disconnected');
 });
 
 mongoose.connection.on('error', (err) => {
-    console.log('MongoDB connection error:', err);
+  console.log('MongoDB connection error:', err);
 });
 
 mongoose.connection.on('open', () => {
-    console.log('Connected to MongoDB');
+  console.log('Connected to MongoDB');
 });
 
 // Initialize Socket.io handlers
 socketHandlers(io);
 
-// Routes 
+// Routes
 app.use('/api/v1/auth', authRouter);
 app.use('/api/v1/boards', boardsRouter);
 app.use('/api/v1/tasks', tasksRouter);
 
-httpServer.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}. http://localhost:${PORT}`);
+const port = PORT || 10000;
+httpServer.listen(port, '0.0.0.0', () => {
+  console.log(`Server running on port ${port}`);
 });
 
 export default io;
