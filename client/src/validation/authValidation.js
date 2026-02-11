@@ -6,7 +6,6 @@ export const registerSchema = z.object({
     .max(50, 'Name must be less than 50 characters')
     .trim(),
   email: z.email('Invalid email address')
-    .toLowerCase()
     .trim(),
   password: z.string()
     .min(6, 'Password must be at least 6 characters')
@@ -19,7 +18,6 @@ export const registerSchema = z.object({
 
 export const loginSchema = z.object({
   email: z.email('Invalid email address')
-    .toLowerCase()
     .trim(),
   password: z.string()
     .min(1, 'Password is required')

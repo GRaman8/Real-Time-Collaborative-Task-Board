@@ -8,6 +8,7 @@ export const createBoardSchema = z.object({
   description: z.string()
     .max(500, 'Description must be less than 500 characters')
     .optional()
+    .or(z.literal(''))
 });
 
 export const updateBoardSchema = z.object({
@@ -19,4 +20,5 @@ export const updateBoardSchema = z.object({
   description: z.string()
     .max(500, 'Description must be less than 500 characters')
     .optional()
+    .or(z.literal(''))
 });

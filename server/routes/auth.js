@@ -9,7 +9,7 @@ import { registerSchema, loginSchema } from '../validation/authValidation.js';
 
 const router = Router();
 
-// @route   POST /api/auth/register
+// @route   POST /api/v1/auth/register
 // @desc    Register user
 router.post('/register', validate(registerSchema), async (req, res) => {
   const { name, email, password } = req.body;
@@ -24,11 +24,7 @@ router.post('/register', validate(registerSchema), async (req, res) => {
     }
 
     // Create new user
-    user = new User({
-      name,
-      email,
-      password,
-    });
+    user = new User({ name, email, password });
 
     // Hash password
     const salt = await bcrypt.genSalt(10);
@@ -36,17 +32,32 @@ router.post('/register', validate(registerSchema), async (req, res) => {
 
     await user.save();
 
-    res.json({
-        message: "User created successfully"
-    });
+    // Return token so user is auto-logged-in after registration
+    const payload = { userId: user._id };
 
+    jwt.sign(
+      payload,
+      JWT_SECRET,
+      { expiresIn: '7d' },
+      (err, token) => {
+        if (err) throw err;
+        res.json({
+          token,
+          user: {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+          }
+        });
+      }
+    );
   } catch (err) {
     console.error(err.message);
     res.status(500).send('Server error');
   }
 });
 
-// @route   POST /api/auth/login
+// @route   POST /api/v1/auth/login
 // @desc    Login user
 router.post('/login', validate(loginSchema), async (req, res) => {
   const { email, password } = req.body;
@@ -67,9 +78,7 @@ router.post('/login', validate(loginSchema), async (req, res) => {
     }
 
     // Create JWT
-    const payload = {
-        userId: user._id,
-    };
+    const payload = { userId: user._id };
 
     jwt.sign(
       payload,
@@ -77,13 +86,13 @@ router.post('/login', validate(loginSchema), async (req, res) => {
       { expiresIn: '7d' },
       (err, token) => {
         if (err) throw err;
-        res.json({ 
-            "Token": token, 
-            "user": { 
-                "id": user.id, 
-                "name": user.name, 
-                "email": user.email, 
-            } 
+        res.json({
+          token,
+          user: {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+          }
         });
       }
     );
@@ -93,14 +102,12 @@ router.post('/login', validate(loginSchema), async (req, res) => {
   }
 });
 
-// @route   GET /api/v*/auth/me
+// @route   GET /api/v1/auth/me
 // @desc    Get current user
 router.get('/me', authMiddleware, async (req, res) => {
   try {
     const user = await User.findById(req.userId).select('-password');
-    res.json({
-        "User Details": user
-    });
+    res.json({ user });
   } catch (err) {
     console.error(err.message);
     res.status(500).send('Server error');

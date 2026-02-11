@@ -11,19 +11,26 @@ import socketHandlers from './socket/socketHandlers.js';
 
 const app = express();
 const httpServer = createServer(app);
+
+const allowedOrigins = [
+    "http://localhost:5173",
+    "http://localhost:3000", 
+];
+
+
 const io = new Server(httpServer,{
     cors: {
-        origin: "http://localhost:3000",
-        methods: ["GET","POST"],
+        origin: allowedOrigins,
+        methods: ["GET","POST", "PUT", "DELETE"],
         credentials: true
     },
-    auth: {
-      rejectUnauthorized: true
-    }
 });
 
 // Middleware
-app.use(cors());
+app.use(cors({
+    origin: allowedOrigins,
+    credentials: true
+}));
 app.use(express.json());
 
 // MongoDB Connection Section

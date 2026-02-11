@@ -7,20 +7,29 @@ import { createTaskSchema, updateTaskSchema, taskIdSchema, boardIdParamSchema } 
 
 const router = Router();
 
-// @route   GET /api/tasks/:boardId
+// Helper: check if user has access to a board
+async function checkBoardAccess(boardId, userId) {
+  const board = await Board.findById(boardId);
+  if (!board) return { error: 'Board not found', status: 404 };
+
+  const hasAccess = board.owner.toString() === userId ||
+    board.members.some(m => m.toString() === userId);
+
+  if (!hasAccess) return { error: 'Access denied', status: 403 };
+  return { board };
+}
+
+// @route   GET /api/v1/tasks/:boardId
 // @desc    Get all tasks for a board
 router.get('/:boardId', authMiddleware, validate(boardIdParamSchema, 'params'), async (req, res) => {
   try {
-    const board = await Board.findById(req.params.boardId);
-    
-    if (!board) {
-      return res.status(404).json({ msg: 'Board not found' });
-    }
+    const access = await checkBoardAccess(req.params.boardId, req.userId);
+    if (access.error) return res.status(access.status).json({ msg: access.error });
 
     const tasks = await Task.find({ board: req.params.boardId })
       .populate('assignedTo', 'name email')
       .sort({ position: 1 });
-    
+
     res.json(tasks);
   } catch (err) {
     console.error(err.message);
@@ -29,12 +38,21 @@ router.get('/:boardId', authMiddleware, validate(boardIdParamSchema, 'params'), 
 });
 
 
-// @route   POST /api/tasks
+// @route   POST /api/v1/tasks
 // @desc    Create a task
 router.post('/', authMiddleware, validate(createTaskSchema), async (req, res) => {
   const { title, description, status, priority, board, tags } = req.body;
 
   try {
+    // Verify board access
+    const access = await checkBoardAccess(board, req.userId);
+    if (access.error) return res.status(access.status).json({ msg: access.error });
+
+    // Get highest position in this status column
+    const lastTask = await Task.findOne({ board, status })
+      .sort({ position: -1 });
+    const position = lastTask ? lastTask.position + 1 : 0;
+
     const newTask = new Task({
       title,
       description,
@@ -42,12 +60,13 @@ router.post('/', authMiddleware, validate(createTaskSchema), async (req, res) =>
       priority,
       board,
       tags,
+      position,
       assignedTo: req.userId,
     });
 
     const task = await newTask.save();
     const populatedTask = await Task.findById(task._id).populate('assignedTo', 'name email');
-    
+
     res.json(populatedTask);
   } catch (err) {
     console.error(err.message);
@@ -55,7 +74,7 @@ router.post('/', authMiddleware, validate(createTaskSchema), async (req, res) =>
   }
 });
 
-// @route   PUT /api/tasks/:id
+// @route   PUT /api/v1/tasks/:id
 // @desc    Update task
 router.put('/:id', authMiddleware, validate(taskIdSchema, 'params'), validate(updateTaskSchema), async (req, res) => {
     
@@ -67,6 +86,10 @@ router.put('/:id', authMiddleware, validate(taskIdSchema, 'params'), validate(up
       if (!task) {
         return res.status(404).json({ msg: 'Task not found' });
       }
+
+      // Verify board access
+      const access = await checkBoardAccess(task.board, req.userId);
+      if (access.error) return res.status(access.status).json({ msg: access.error });
 
       // Build update object
       const updateData = {};
@@ -93,7 +116,7 @@ router.put('/:id', authMiddleware, validate(taskIdSchema, 'params'), validate(up
 );
 
 
-// @route   DELETE /api/tasks/:id
+// @route   DELETE /api/v1/tasks/:id
 // @desc    Delete task
 router.delete('/:id', authMiddleware, validate(taskIdSchema, 'params'), async (req, res) => {
   try {
@@ -102,6 +125,11 @@ router.delete('/:id', authMiddleware, validate(taskIdSchema, 'params'), async (r
     if (!task) {
       return res.status(404).json({ msg: 'Task not found' });
     }
+
+    // Verify board access
+    const access = await checkBoardAccess(task.board, req.userId);
+    if (access.error) return res.status(access.status).json({ msg: access.error });
+
 
     await task.deleteOne();
     res.json({ msg: 'Task removed', id: req.params.id });

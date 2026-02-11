@@ -7,7 +7,8 @@ export const createTaskSchema = z.object({
     .trim(),
   description: z.string()
     .max(1000, 'Description must be less than 1000 characters')
-    .optional(),
+    .optional()
+    .or(z.literal('')),
   status: z.enum(['todo', 'in-progress', 'done'], {
     errorMap: () => ({ message: 'Invalid status' })
   }).default('todo'),
@@ -16,6 +17,7 @@ export const createTaskSchema = z.object({
   }).default('medium'),
   tags: z.string()
     .optional()
+    .or(z.literal(''))
 });
 
 export const updateTaskSchema = z.object({
@@ -26,8 +28,10 @@ export const updateTaskSchema = z.object({
     .optional(),
   description: z.string()
     .max(1000, 'Description must be less than 1000 characters')
-    .optional(),
+    .optional()
+    .or(z.literal('')),
   status: z.enum(['todo', 'in-progress', 'done']).optional(),
   priority: z.enum(['low', 'medium', 'high']).optional(),
-  tags: z.array(z.string()).max(10, 'Maximum 10 tags').optional()
+  tags: z.array(z.string()).max(10, 'Maximum 10 tags').optional(),
+  position: z.number().int().min(0).optional()
 });
