@@ -197,7 +197,7 @@ MIT License - feel free to use this project for learning or building your own ap
 
 **Your Name**
 - GitHub: [@GRaman8](https://github.com/GRaman8)
-- LinkedIn: [Ganapathi Deivanayagam](www.linkedin.com/in/ganapathi-raman)
+- LinkedIn: [Ganapathi Deivanayagam](http://linkedin.com/in/ganapathi-raman)
 
 <!-- - Portfolio: [yourwebsite.com](https://yourwebsite.com) -->
 
