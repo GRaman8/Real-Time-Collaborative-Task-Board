@@ -104,8 +104,8 @@ Frontend will run on `http://localhost:3000`
 
 ## 🌐 Live Demo
 
-- **Frontend**: [https://task-board-demo.vercel.app](https://your-vercel-url.vercel.app)
-- **Backend**: [https://task-board-api.onrender.com](https://your-render-url.onrender.com)
+- **Frontend**: *Coming Soon*
+- **Backend**: *Coming Soon*
 
 ## 📁 Project Structure
 ```
